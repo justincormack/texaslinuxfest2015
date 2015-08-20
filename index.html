@@ -1,0 +1,289 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<title>Getting Started in Unikernels Using the Rump Kernel</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=792, user-scalable=no">
+	<meta http-equiv="x-ua-compatible" content="ie=edge">
+	<link rel="stylesheet" href="shower/themes/ribbon/styles/screen.css">
+</head>
+<body class="list">
+	<header class="caption">
+		<h1>Getting Started in Unikernels Using the Rump Kernel</h1>
+		<p>Justin Cormack</p>
+	</header>
+	<section class="slide cover" id="Cover"><div>
+		<h2>Getting Started in Unikernels Using the Rump Kernel</h2>
+		<p><a href="https://github.com/justincormack">Justin Cormack</a> <a href="https://twitter.com/justincormack">@justincormack</a>
+		<img src="pictures/logo.svg" alt="" width="30%"/>
+		<!--
+			To apply styles to the certain slides
+			set slide ID to get needed elements
+			-->
+		<style>
+			#Cover h2 {
+				margin:30px 0 0;
+				color:#FFF;
+				text-align:center;
+				font-size:70px;
+				}
+			#Cover p {
+				margin:10px 0 0;
+				text-align:center;
+				color:#FFF;
+				font-style:italic;
+				font-size:20px;
+				}
+				#Cover p a {
+					color:#FFF;
+					}
+		</style>
+	</div></section>
+
+
+
+<section class="slide">
+<div>
+<h2>Slides at http://texaslinuxfest2015.myriabit.com/</h2>
+</div>
+</section>
+
+
+<section class="slide">
+<div>
+<h2>Justin Cormack</h2>
+<p>London based developer working on rump kernels and unikernels for the last few years.
+
+<p>Co-author of new ebook <a href="https://www.safaribooksonline.com/library/view/docker-in-the/9781939902184/">Docker in the Trenches: Successful Production Deployment</a>
+
+<p>On twitter <a href="https://twitter.com/justincormack">@justincormack</a> and Github <a href="https://github.com/justincormack">justincormack</a>
+</div>
+</section>
+
+<section class="slide">
+<div>
+<h2>Why unikernel?</h2>
+<p>Lots more in the previous talk...
+<ul>
+<li>Just the code you need.
+<li>Self contained with all dependencies
+<li>Makes system software more accessible
+</ul>
+</div>
+</section>
+
+<section class="slide">
+<div>
+<h2>What is the rump kernel?</h2>
+<p>Essentially it is the drivers from NetBSD without the rest of the kernel
+<ul>
+<li>TCP, UDP, sockets
+<li>File system drivers
+<li>Hardware drivers and virtio drivers
+<li>Random numbers, crypto
+</ul>
+</div>
+</section>
+
+<section class="slide">
+<div>
+<h2>What is the rump kernel not?</h2>
+<p>It does not have
+<ul>
+<li>Scheduler
+<li>Processes
+<li>Userspace
+</ul>
+</div>
+</section>
+
+<section class="slide">
+<div>
+<h2>Why not Linux?</h2>
+<p>It has not been done yet...
+<p>While the code to use NetBSD drivers without the kernel has been upstream for years, originally for easy driver development in userspace and for running the test suite, eg to spin up a TCP stack for testing.
+<p><a href="https://twitter.com/thehajime">Hajime Tazaki</a> is working on <a href="http://libos-nuse.github.io/">LibOS-Nuse</a> which starts the work with the network stack.
+<p>Note you do not need to run NetBSD &ndash; Linux is the main development platform.
+</div>
+</section>
+
+<section class="slide">
+<div>
+<h2>Turning the rump kernel into a unikernel</h2>
+<ul>
+<li>Add simple threading and scheduler
+<li>Add platform support: so far for userspace, Xen, KVM, Qemu and some bare metal platforms.
+<li>Add libc, and other userspace libraries
+<li>
+</ul>
+</section>
+
+
+<section class="slide">
+<div>
+<h2>Architecture</h2>
+<img src="pictures/arch.png" alt="architecture diagram"/>
+</section>
+
+<section class="slide">
+<div>
+<h2>Architecture</h2>
+<ul>
+<li>The hypercall layer provides threads, clock, and scheduler, eg if running in userspace this is very simple
+<li>Code is a normal library, so syscalls are just function calls, sharing the same stack
+<li>
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>What doesn't work</h2>
+<ul>
+<li>Single process only &ndash; cannot <code>fork</code> or <code>exec</code>.
+<li>No virtual memory &ndash; cannot <code>mmap</code> files.
+<li>No shared librarues &ndash; everything is statically linked.
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>Languages known to work</h2>
+<p>So far mostly tested with C programs, many dynamic languages expect dynamic libraries, although this can be worked around in principle.
+<ul>
+<li>C, C++
+<li>Lua, LuaJIT
+<li>Python, PHP
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>Programs known to work</h2>
+<ul>
+<li>Nginx
+<li>Redis
+<li>MySQL
+<li>LevelDB
+<li>mpg123
+<li>roundcube
+<li>...
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>Build process</h2>
+<ul>
+<li>Essentially we are cross compiling
+<li>And we need to make static binaries
+<li>Unfortunately not everything likes to do those nowadays
+<li>Still working on improving and simplifying the build process...
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>Build steps</h2>
+<p>Will build for qemu, as it runs anywhere on Linux. Build is pretty much the same for Xen, KVM.
+<ol>
+<li>Build (cross) toolchain
+<li>Compile any (static) libraries needed
+<li>Compile program
+<li>Configure program
+<li>Run
+</ol>
+</section>
+
+<section class="slide">
+<div>
+<h2>1. Build toolchain</h2>
+<ul>
+<li><code>git clone <a href="https://github.com/rumpkernel/rumprun">https://github.com/rumpkernel/rumprun</a></code>
+<li><code>cd rumprun</code>
+<li><code>git submodule update --init</code>
+<li><code>./build-rr.sh hw</code>
+<li><code>export PATH=$PWD/app-tools:$PATH</code>
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>2. Build an application</h2>
+<p>There are a bunch of tested build scripts for some programs and libraries.
+<ul>
+<li><code>git clone <a href="https://github.com/rumpkernel/rumprun">https://github.com/rumpkernel/rumprun-packages</a></code>
+<li><code>cd rumprun-packages</code>
+<li><code>echo "RUMPRUN_TOOLCHAIN_TUPLE=x86_64-rumprun-netbsd" > config.mk</code>
+<li><code>cd nginx</code>
+<li><code>make</code>
+<li><code>rumpbake hw_generic bin/nginx.qemu bin/nginx</code>
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>3. Configure networking</h2>
+<ul>
+<li><code>sudo ip tuntap add dev tap0 mode tap user $(whoami)</code>
+<li><sudo>ip link set dev tap0 up</code>
+<li><code>sudo brctl addbr bridge0</code>
+<li><code>sudo ip link set bridge0 up</code>
+<li><code>sudo brctl addif bridge0 tap0</code>
+<li><code>sudo ip addr add 10.0.0.1/24 dev bridge0</code>
+<li>replace /etc/qemu-ifup with an empty script
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>4. Run unikernel</h2>
+<ul>
+<li><code>rumprun qemu -i -I 'qnet0,vioif,-net tap,ifname=tap0' -W qnet0,inet,static,10.0.0.2/24 -b images/stubetc.iso,/etc -b images/data.iso,/data bin/nginx.qemu -- -c /data/conf/nginx.conf</code>
+<li><code>curl http://10.0.0.2/</code>
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>Building other applications</h2>
+<p>Modify the build as appropriate, hopefully as simple as:
+<ul>
+<li><code>./configure --host=x86_64-rumprun-netbsd --disable-shared</code>
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>Docker builds</h2>
+<p>The toolchain and packaged applications are experimentally available as docker containers, will be finalized and documented shortly
+<ul>
+<li>docker pull ************************************
+<li>docker pull ************************************
+</ul>
+</section>
+
+<section class="slide">
+<div>
+<h2>Getting help</h2>
+<ul>
+<li><a href="http://rumpkernel.org">rumpkernel.org</a>
+<li>IRC #rumpkernel on Freenode
+<li>Mailing list <a href="https://www.freelists.org/list/rumpkernel-users">https://www.freelists.org/list/rumpkernel-users</a>
+<li>Twitter <a href="https://twitter.com/rumpkernel">@rumpkernel</a>
+</ul>
+</section>
+
+
+
+
+
+
+	<p class="badge"><a href="https://github.com/justin/texaslinuxfest2015">Fork me on Github</a></p>
+	<!--
+		To hide progress bar from entire presentation
+		just remove “progress” element.
+		-->
+	<div class="progress"><div></div></div>
+	<script src="shower/shower.min.js"></script>
+</body>
+</html>
