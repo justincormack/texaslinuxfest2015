@@ -236,7 +236,7 @@
 <div>
 <h2>4. Run unikernel</h2>
 <ul>
-<li><code>rumprun qemu -i -I 'qnet0,vioif,-net tap,ifname=tap0' -W qnet0,inet,static,10.0.0.2/24 -b images/stubetc.iso,/etc -b images/data.iso,/data bin/nginx.qemu -- -c /data/conf/nginx.conf</code>
+<li><code>rumprun qemu -i -I 'qnet0,vioif,-net tap,ifname=tap0' -W qnet0,inet,static,10.0.0.2/24 -b images/stubetc.iso,/etc -b images/data.iso,/data bin/nginx.qemu -c /data/conf/nginx.conf</code>
 <li><code>curl http://10.0.0.2/</code>
 </ul>
 </section>
